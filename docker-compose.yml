@@ -27,6 +27,11 @@ services:
       - 'traefik.http.services.ollama.loadbalancer.server.port=11434'
     volumes:
       - ollama_storage:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          memory: 3G
+    shm_size: 1G
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
