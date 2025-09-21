@@ -27,10 +27,8 @@ services:
       - 'traefik.http.services.ollama.loadbalancer.server.port=11434'
     volumes:
       - ollama_storage:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          memory: 3G
+    mem_limit: 3G
+    mem_reservation: 2.5G
     shm_size: 1G
     healthcheck:
       test: ["CMD", "ollama", "list"]
@@ -112,6 +110,7 @@ services:
       - n8n_storage:/home/node/.n8n
       - ./n8n/demo-data:/demo-data
       - ./shared:/data/shared
+    mem_limit: 1G
     depends_on:
       n8n-import:
         condition: service_completed_successfully
