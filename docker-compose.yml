@@ -35,7 +35,7 @@ services:
         limits:
           memory: 3G
         reservations:
-          memory: 2.5G
+          memory: 3G
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
