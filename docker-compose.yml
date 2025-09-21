@@ -27,9 +27,9 @@ services:
       - 'traefik.http.services.ollama.loadbalancer.server.port=11434'
     volumes:
       - ollama_storage:/root/.ollama
-    mem_limit: 3G
-    mem_reservation: 2.5G
-    shm_size: 1G
+    mem_limit: 2.5G
+    mem_reservation: 2G
+    shm_size: 512M
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
@@ -49,7 +49,7 @@ services:
       - OLLAMA_HOST=ollama:11434
     command:
       - "-c"
-      - "sleep 10; ollama pull llama3.2:3b || true"
+      - "sleep 10; ollama pull llama3.2:1b || true"
     depends_on:
       ollama:
         condition: service_healthy
