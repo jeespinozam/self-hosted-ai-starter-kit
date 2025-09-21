@@ -55,7 +55,7 @@ services:
       - OLLAMA_HOST=ollama:11434
     command:
       - "-c"
-      - "sleep 10; ollama pull gemma2:2b || true"
+      - "sleep 10; ollama pull gemma3:1b || true"
     depends_on:
       ollama:
         condition: service_healthy
