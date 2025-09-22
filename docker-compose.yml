@@ -20,12 +20,6 @@ services:
       - OLLAMA_NUM_PARALLEL=1
     ports:
       - 11434
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.ollama.rule=Host(`ollama.atioperu.com`)'
-      - 'traefik.http.routers.ollama.entrypoints=websecure'
-      - 'traefik.http.routers.ollama.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.ollama.loadbalancer.server.port=11434'
     volumes:
       - ollama_storage:/root/.ollama
     healthcheck:
@@ -121,11 +115,5 @@ services:
     restart: unless-stopped
     ports:
       - 6333
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.routers.qdrant.rule=Host(`qdrant.atioperu.com`)'
-      - 'traefik.http.routers.qdrant.entrypoints=websecure'
-      - 'traefik.http.routers.qdrant.tls.certresolver=letsencrypt'
-      - 'traefik.http.services.qdrant.loadbalancer.server.port=6333'
     volumes:
       - qdrant_storage:/qdrant/storage
