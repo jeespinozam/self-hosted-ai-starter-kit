@@ -99,6 +99,8 @@ services:
       - OLLAMA_HOST=${OLLAMA_HOST:-ollama:11434}
       - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
       - N8N_HOST=n8n.atioperu.com
+      - N8N_PROTOCOL=https
+      - N8N_EDITOR_BASE_URL=https://n8n.atioperu.com/
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/demo-data:/demo-data
