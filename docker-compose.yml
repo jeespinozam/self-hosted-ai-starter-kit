@@ -98,6 +98,7 @@ services:
       - N8N_USER_MANAGEMENT_JWT_SECRET=${N8N_USER_MANAGEMENT_JWT_SECRET}
       - OLLAMA_HOST=${OLLAMA_HOST:-ollama:11434}
       - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - N8N_HOST=n8n.atioperu.com
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/demo-data:/demo-data
