@@ -52,29 +52,29 @@ services:
         condition: service_healthy
     restart: "no"
 
-  n8n-import:
-    image: n8nio/n8n:latest
-    hostname: n8n-import
-    container_name: n8n-import
-    networks:
-      - dokploy-network
-    environment:
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=${POSTGRESDB_HOST}
-      - DB_POSTGRESDB_USER=${POSTGRES_USER}
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
-      - N8N_DIAGNOSTICS_ENABLED=false
-      - N8N_PERSONALIZATION_ENABLED=false
-      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      - N8N_USER_MANAGEMENT_JWT_SECRET=${N8N_USER_MANAGEMENT_JWT_SECRET}
-    entrypoint: /bin/sh
-    command:
-      - "-c"
-      - "n8n import:credentials --separate --input=/demo-data/credentials && n8n import:workflow --separate --input=/demo-data/workflows"
-    volumes:
-      - ./n8n/demo-data:/demo-data
-    restart: "no"
+  # n8n-import:
+  #   image: n8nio/n8n:latest
+  #   hostname: n8n-import
+  #   container_name: n8n-import
+  #   networks:
+  #     - dokploy-network
+  #   environment:
+  #     - DB_TYPE=postgresdb
+  #     - DB_POSTGRESDB_HOST=${POSTGRESDB_HOST}
+  #     - DB_POSTGRESDB_USER=${POSTGRES_USER}
+  #     - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+  #     - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+  #     - N8N_DIAGNOSTICS_ENABLED=false
+  #     - N8N_PERSONALIZATION_ENABLED=false
+  #     - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+  #     - N8N_USER_MANAGEMENT_JWT_SECRET=${N8N_USER_MANAGEMENT_JWT_SECRET}
+  #   entrypoint: /bin/sh
+  #   command:
+  #     - "-c"
+  #     - "n8n import:credentials --separate --input=/demo-data/credentials && n8n import:workflow --separate --input=/demo-data/workflows"
+  #   volumes:
+  #     - ./n8n/demo-data:/demo-data
+  #   restart: "no"
 
   n8n:
     image: n8nio/n8n:latest
