@@ -1,0 +1,1024 @@
+{
+  "name": "Auto Expense tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "postProcessAction": "nothing",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [
+        -912,
+        112
+      ],
+      "id": "aa81a4f1-70fb-4e1d-988d-63cbe368057d",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "cPKsFA1d1ecpIIn4",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "=Email recibido: {{ $json.data }}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"montoPen\": \"number\",\n  \"montoUSD\": \"number\",\n  \"day\": \"number\",\n  \"month\": \"number\",\n  \"year\": \"number\",\n  \"descripcion\": \"string\",\n  \"categoria\": \"string\"\n}",
+        "options": {
+          "systemPromptTemplate": "Eres un asistente especializado en procesar correos electrónicos de notificación bancaria.  \nTu tarea es:  \n1. Revisar el contenido del correo.  \n2. Extraer:  \n   - Monto Pen, si es que el gasto está en soles, sino 0 (en número, sin moneda).  \n   - Monto USD, si es que el gasto está en dolares, sino 0 (en número, sin moneda).\n   - Fecha de la transacción en day, month, year, numericos sin 0 precediendo a los numeros menores a 10. Si no hay fecha en el mensaje usar el dia actual.\n   - Descripción o concepto del gasto.  \n3. Clasificar el gasto en una de las siguientes categorías:  \n- DIVERSION\n- NECESIDADES\n- CASA\n- OTROS\n- SUNAT\n- CASA + BREN\n- BRENDA\n- COMPRA DEPA\n- INVERSION\n- PADRE  \n4. Responder SIEMPRE en formato JSON con la estructura."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        1488,
+        160
+      ],
+      "id": "a3f0f6a4-b10d-4882-8f88-35f427a01709",
+      "name": "Information Extractor",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "gpt-oss:20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        384,
+        432
+      ],
+      "id": "367210f8-a00d-45d6-bff0-fcbf448619ca",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Arj2IknFpPDj66jG",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "=MENSAJE RECIBIDO: {{ $json.data }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "is_expense",
+              "description": "cuando el mensaje es un gasto (tiene monto, fecha, descripción de transacción)."
+            },
+            {
+              "category": "not_expense",
+              "description": "cuando el mensaje no corresponde a un gasto."
+            }
+          ]
+        },
+        "options": {
+          "fallback": "discard",
+          "systemPromptTemplate": "Eres un asistente especializado en clasificar mensajes.\nTu tarea es analizar el contenido de un mensaje, aunque contenga texto adicional como reenvíos, saludos o comentarios.\nDebes decidir si contiene información que corresponde a una notificación o registro de un gasto (ejemplo: transacción bancaria, monto, fecha y descripción).\n\nResponde únicamente en JSON válido.\nNo inventes ni cambies los nombres de las claves.\nSolo existen dos salidas válidas. Cualquier respuesta fuera de este formato se considera incorrecta. Devuelveme tu razonamiento de por que clasificas eso.",
+          "enableAutoFixing": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        208
+      ],
+      "id": "07356558-4971-4d81-b4e5-1c05b2da3672",
+      "name": "Text Classifier",
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "phoneNumberId": "731106923427581",
+        "recipientPhoneNumber": "51984821437",
+        "message": "=Monto: S/.{{ $json.output.montoPen }}\nMonto USD: $ {{ $json.output.montoUSD }}\nFecha: {{ $json.output.day }}/{{ $json.output.month }}/{{ $json.output.year }}\nDescripcion: {{ $json.output.descripcion }}\nCategoria: {{ $json.output.categoria }}",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Confirma la categoria",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "DIVERSION"
+                  },
+                  {
+                    "option": "NECESIDADES"
+                  },
+                  {
+                    "option": "CASA"
+                  },
+                  {
+                    "option": "OTROS"
+                  },
+                  {
+                    "option": "SUNAT"
+                  },
+                  {
+                    "option": "CASA + BREN"
+                  },
+                  {
+                    "option": "BRENDA"
+                  },
+                  {
+                    "option": "INVERSION"
+                  },
+                  {
+                    "option": "PADRE"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Detalles",
+              "placeholder": "={{ $json.output.descripcion }}"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        16
+      ],
+      "id": "ebd894f9-3414-455b-8fef-3e0fcf962efd",
+      "name": "Send message and wait for response",
+      "webhookId": "8f9f3767-4f02-4b6d-ae5d-8821137ef879",
+      "alwaysOutputData": false,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "y4xgphDFPy8ySVZf",
+          "name": "Atio Cellphone"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1g-0kgI4JnwlIO61rXEW29zhfiAWXeo84Zdkjo92-Tq4",
+          "mode": "list",
+          "cachedResultName": "Balance soles 22 | 23 | 24 | 25",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1g-0kgI4JnwlIO61rXEW29zhfiAWXeo84Zdkjo92-Tq4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1484753719,
+          "mode": "list",
+          "cachedResultName": "Aug 25",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1g-0kgI4JnwlIO61rXEW29zhfiAWXeo84Zdkjo92-Tq4/edit#gid=1484753719"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Detalle": "={{ $json.output.descripcion || $('Information Extractor').item.json.output.descripcion }}",
+            "Tag (NECESIDADES, COMIDA, DIVERSION, OTROS, SUNAT)": "={{ $json.data['Confirma la categoria'] || $('Information Extractor').item.json.output.categoria }}",
+            "Monto": "={{ $('Information Extractor').item.json.output.montoPen }}",
+            "Monto USD": "={{ $('Information Extractor').item.json.output.montoUSD }}",
+            "Fecha": "={{ $('Information Extractor').item.json.output.day }}",
+            "Obs": "Added by N8N"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Detalle",
+              "displayName": "Detalle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Monto",
+              "displayName": "Monto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Monto USD",
+              "displayName": "Monto USD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tag (NECESIDADES, COMIDA, DIVERSION, OTROS, SUNAT)",
+              "displayName": "Tag (NECESIDADES, COMIDA, DIVERSION, OTROS, SUNAT)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Obs",
+              "displayName": "Obs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Obs 1",
+              "displayName": "Obs 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TOTAL SOLES",
+              "displayName": "TOTAL SOLES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "*COBRAR A CARLOS",
+              "displayName": "*COBRAR A CARLOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TOTAL USD",
+              "displayName": "TOTAL USD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2704,
+        48
+      ],
+      "id": "4420264c-b4f8-4986-b6b0-a6bf2a9e6723",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gyf03YGw60nn0LPI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "delivered"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        336
+      ],
+      "id": "2ab1f295-9f33-4cce-951d-8bca21794c77",
+      "name": "WhatsApp Trigger",
+      "webhookId": "249aa932-13e0-414d-a3ff-52e17b4c9fe2",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "0DlVssW4WFlgKQDx",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fb8cb619-ecfe-44ef-ba20-ffd9b1c45123",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -704,
+        336
+      ],
+      "id": "b066cc93-0440-41c1-b8f3-5acd77915786",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1g-0kgI4JnwlIO61rXEW29zhfiAWXeo84Zdkjo92-Tq4",
+          "mode": "list",
+          "cachedResultName": "Balance soles 22 | 23 | 24 | 25",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1g-0kgI4JnwlIO61rXEW29zhfiAWXeo84Zdkjo92-Tq4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1484753719,
+          "mode": "list",
+          "cachedResultName": "Aug 25",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1g-0kgI4JnwlIO61rXEW29zhfiAWXeo84Zdkjo92-Tq4/edit#gid=1484753719"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Detalle": "={{ $json.output.descripcion }}",
+            "Tag (NECESIDADES, COMIDA, DIVERSION, OTROS, SUNAT)": "={{ $json.output.categoria }}",
+            "Monto": "={{ $json.output.montoPen }}",
+            "Monto USD": "={{ $json.output.montoUSD }}",
+            "Fecha": "={{ $json.output.day }}",
+            "Obs": "Added by N8N"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Detalle",
+              "displayName": "Detalle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Monto",
+              "displayName": "Monto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Monto USD",
+              "displayName": "Monto USD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tag (NECESIDADES, COMIDA, DIVERSION, OTROS, SUNAT)",
+              "displayName": "Tag (NECESIDADES, COMIDA, DIVERSION, OTROS, SUNAT)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Obs",
+              "displayName": "Obs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Obs 1",
+              "displayName": "Obs 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TOTAL SOLES",
+              "displayName": "TOTAL SOLES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "*COBRAR A CARLOS",
+              "displayName": "*COBRAR A CARLOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TOTAL USD",
+              "displayName": "TOTAL USD",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2704,
+        272
+      ],
+      "id": "66338cff-0867-44c3-8979-2d8e3dba977f",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gyf03YGw60nn0LPI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI",
+          "mode": "list",
+          "cachedResultName": "n8n expense tracker tests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Evaluation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI/edit#gid=0"
+        }
+      },
+      "type": "n8n-nodes-base.evaluationTrigger",
+      "typeVersion": 4.6,
+      "position": [
+        -656,
+        560
+      ],
+      "id": "4d194bf0-f99c-4361-a459-09113d2f6347",
+      "name": "When fetching a dataset",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gyf03YGw60nn0LPI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-oss:20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        336
+      ],
+      "id": "22a05022-ca34-44c8-80a2-71213cc421cb",
+      "name": "Ollama Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Arj2IknFpPDj66jG",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI",
+          "mode": "list",
+          "cachedResultName": "n8n expense tracker tests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI/edit#gid=0"
+        },
+        "outputs": {
+          "values": [
+            {
+              "outputName": "actual_response",
+              "outputValue": "={{ true }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        144
+      ],
+      "id": "8377b579-5826-4690-a6a4-fd1715fb93a2",
+      "name": "Evaluation1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gyf03YGw60nn0LPI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "408341ea-aa1b-489d-ba08-5c91713a32ce",
+              "name": "data",
+              "value": "={{ $json.input }}",
+              "type": "string"
+            },
+            {
+              "id": "0cdcd4ba-e364-49d8-856a-765fe6e24c31",
+              "name": "source",
+              "value": "test",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        560
+      ],
+      "id": "288d02e3-7581-473d-9162-b6c636d7db2c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cf33d325-e91f-489e-8a64-c0e8617e7011",
+              "name": "data",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "1e6dfe7c-52ad-4d28-90ca-86ca7a436131",
+              "name": "source",
+              "value": "whatsapp",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        320
+      ],
+      "id": "92345d01-b7cb-4abd-ae1c-b009d464d2bb",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d9678e20-1fda-4ed6-a860-15bc5d88914d",
+              "name": "data",
+              "value": "={{ $json.textHtml }}",
+              "type": "string"
+            },
+            {
+              "id": "042d003c-41cb-43ed-b320-a66b2349f70a",
+              "name": "source",
+              "value": "email",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -336,
+        128
+      ],
+      "id": "f9539b6b-4776-4abd-9859-0ae61542aa92",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI",
+          "mode": "list",
+          "cachedResultName": "n8n expense tracker tests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Evaluation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hTlYJYS_-FggTnyDF4DlXRgdc8yrwcSnjLHJxnekOmI/edit#gid=0"
+        },
+        "outputs": {
+          "values": [
+            {
+              "outputName": "actual_response",
+              "outputValue": "={{ false }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        384
+      ],
+      "id": "8e4199ae-2e05-44ef-ac82-b730e8889705",
+      "name": "Evaluation",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "gyf03YGw60nn0LPI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "99380d35-d908-4b7f-b6af-8b13add479d2",
+              "leftValue": "={{ $json.source }}",
+              "rightValue": "test",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1008,
+        144
+      ],
+      "id": "bdb30ef9-b44f-42df-8eab-7840f95a651e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8b7f875e-f348-408a-856b-67b36d93a3d5",
+              "leftValue": "={{ $('Evaluation1').item.json.source }}",
+              "rightValue": "email",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1824,
+        160
+      ],
+      "id": "7cc82dc3-8d7e-43e2-9873-f1adfa44fcc8",
+      "name": "Is email?",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "setMetrics",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.evaluation",
+      "typeVersion": 4.7,
+      "position": [
+        1072,
+        384
+      ],
+      "id": "49aecb11-a3d9-41c6-9b4e-fd95e580fac3",
+      "name": "Evaluation2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Is email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Evaluation1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When fetching a dataset": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluation1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Evaluation2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Evaluation2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is email?": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": 3600
+  },
+  "versionId": "bd5e186a-54d0-415e-b075-baddc897eae0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c0e83094b8a264424513fa292232d3316b97120d7ec57529e6360ea5889b81e5"
+  },
+  "id": "9jRiXO9eckCQjTZS",
+  "tags": []
+}
