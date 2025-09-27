@@ -83,8 +83,8 @@ services:
     networks:
       - dokploy-network
     restart: unless-stopped
-    ports:
-      - 5678
+    # ports:
+    #   - 5678
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.n8n.rule=Host(`n8n.atioperu.com`)'
