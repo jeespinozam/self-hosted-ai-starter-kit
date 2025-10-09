@@ -21,6 +21,8 @@ services:
       - 'traefik.http.routers.ollama.entrypoints=websecure'
       - 'traefik.http.routers.ollama.tls.certresolver=letsencrypt'
       - 'traefik.http.services.ollama.loadbalancer.server.port=11434'
+      - 'traefik.http.routers.ollama.middlewares=ollama-auth'
+      - 'traefik.http.middlewares.ollama-auth.basicauth.users=${OLLAMA_BASIC_AUTH_USERS}'
     environment:
       - OLLAMA_MAX_LOADED_MODELS=1
       - OLLAMA_NUM_PARALLEL=1
