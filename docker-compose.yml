@@ -86,7 +86,7 @@ services:
   #   restart: "no"
 
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:1.115.0
     hostname: n8n
     container_name: n8n
     networks:
