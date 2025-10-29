@@ -57,6 +57,7 @@ services:
         ollama run gpt-oss:20b-cloud || true
         ollama run deepseek-v3.1:671b-cloud || true
         ollama run qwen3-vl:235b-cloud || true
+        ollama run minimax-m2:cloud || true
     depends_on:
       ollama:
         condition: service_healthy
