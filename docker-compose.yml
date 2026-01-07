@@ -52,12 +52,12 @@ services:
       - "-c"
       - |
         sleep 10
-        ollama run qwen3-coder:480b-cloud || true
         ollama run gpt-oss:120b-cloud || true
-        ollama run gpt-oss:20b-cloud || true
-        ollama run deepseek-v3.1:671b-cloud || true
-        ollama run qwen3-vl:235b-cloud || true
-        ollama run minimax-m2:cloud || true
+        ollama run deepseek-v3.2:cloud || true
+        ollama run qwen3-next:80b-cloud || true
+        ollama run minimax-m2.1:cloud || true
+        ollama run glm-4.7:cloud || true
+        ollama run nemotron-3-nano:30b-cloud || true
     depends_on:
       ollama:
         condition: service_healthy
